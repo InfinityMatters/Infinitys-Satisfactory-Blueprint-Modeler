@@ -1,15 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Satisfactory Blueprint Viewer</title>
-  <script src="viewer.js" defer></script>
-  <style>html,body{margin:0;overflow:hidden}canvas{display:block}</style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+  <script type="module" src="viewer.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+    canvas { display: block; }
+    #ui {
+      position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95);
+      padding: 12px; border-radius: 8px; box-shadow: 0 0 5px #000; z-index: 1;
+    }
+    #log { max-height: 100px; overflow-y: auto; font-size: 12px; }
+  </style>
 </head>
 <body>
-  <input type="file" id="sbp" accept=".sbp">
-  <input type="file" id="sbpcfg" accept=".sbpcfg">
-  <button onclick="loadBlueprint()">Load Blueprint</button>
-  <div id="log"></div>
+  <div id="ui">
+    <h3>Upload Blueprint</h3>
+    <input type="file" id="sbp" accept=".sbp"> <br>
+    <input type="file" id="sbpcfg" accept=".sbpcfg"> <br>
+    <button onclick="loadBlueprint()">Load Blueprint</button>
+    <div id="log"></div>
+  </div>
 </body>
 </html>
