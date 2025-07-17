@@ -31,14 +31,11 @@
     <button id="loadBtn">🚀 Load Blueprint</button>
     <div id="log"></div>
   </div>
-  <script>
-    document.getElementById('loadBtn').addEventListener('click', () => {
-      if (typeof loadBlueprint === 'function') {
-        loadBlueprint();
-      } else {
-        alert('Blueprint loader is not ready. Check if viewer.js is loaded as a module.');
-      }
-    });
-  </script>
+ <script type="module">
+  import { loadBlueprint } from './viewer.js';
+  document.getElementById('loadBtn').addEventListener('click', () => {
+    loadBlueprint();
+  });
+</script>
 </body>
 </html>
