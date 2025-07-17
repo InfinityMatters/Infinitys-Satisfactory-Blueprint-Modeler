@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Satisfactory Blueprint Viewer</title>
+  <script src="viewer.js" defer></script>
+  <style>html,body{margin:0;overflow:hidden}canvas{display:block}</style>
 </head>
 <body>
-  <h1>Welcome to Satisfactory Blueprint Viewer!</h1>
-  <p>Your web-based tool for viewing Satisfactory blueprints.</p>
+  <input type="file" id="sbp" accept=".sbp">
+  <input type="file" id="sbpcfg" accept=".sbpcfg">
+  <button onclick="loadBlueprint()">Load Blueprint</button>
+  <div id="log"></div>
 </body>
 </html>
