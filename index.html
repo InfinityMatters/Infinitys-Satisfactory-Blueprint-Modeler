@@ -20,10 +20,21 @@
 <body>
   <div id="ui">
     <h3>Upload Blueprint</h3>
+    <label for="sbp">Add .sbp:</label>
     <input type="file" id="sbp" accept=".sbp"> <br>
+    <label for="sbpcfg">Add .sbpcfg:</label>
     <input type="file" id="sbpcfg" accept=".sbpcfg"> <br>
-    <button onclick="loadBlueprint()">Load Blueprint</button>
+    <button id="loadBtn">Load Blueprint</button>
     <div id="log"></div>
   </div>
+  <script>
+    document.getElementById('loadBtn').addEventListener('click', () => {
+      if (typeof loadBlueprint === 'function') {
+        loadBlueprint();
+      } else {
+        alert('Blueprint loader is not ready. Check if viewer.js is loaded as a module.');
+      }
+    });
+  </script>
 </body>
 </html>
