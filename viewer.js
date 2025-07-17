@@ -1,41 +1,77 @@
-let scene, camera, renderer, controls;
+import { parseBlueprint } from './parser.js';
+
+let scene, camera, renderer, controls, loader;
+const modelCache = new Map();
+
 function initScene() {
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 10000);
-  renderer = new THREE.WebGLRenderer({antialias:true});
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
+
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   camera.position.set(0, 300, 800);
+  controls.enableDamping = true;
+
   const light = new THREE.HemisphereLight(0xffffff, 0x444444);
   scene.add(light);
+
+  loader = new THREE.GLTFLoader();
 }
+
+function loadGLB(typePath) {
+  const key = typePath.split('/').pop();
+  if (modelCache.has(key)) return Promise.resolve(modelCache.get(key));
+
+  return loader.loadAsync(`models/${key}.glb`)
+    .then(gltf => {
+      modelCache.set(key, gltf.scene);
+      return gltf.scene;
+    })
+    .catch(() => {
+      console.warn(`⚠️ Missing model for ${key}`);
+      return new THREE.Mesh(
+        new THREE.BoxGeometry(100, 100, 100),
+        new THREE.MeshStandardMaterial({ color: 0xff8888 })
+      );
+    });
+}
+
+function loadBlueprint() {
+  const sbpFile = document.getElementById('sbp').files[0];
+  const cfgFile = document.getElementById('sbpcfg').files[0];
+  if (!sbpFile || !cfgFile) {
+    alert('Please upload both .sbp and .sbpcfg files.');
+    return;
+  }
+
+  const r1 = new FileReader(), r2 = new FileReader();
+  let sbpBuf = null, cfgBuf = null;
+
+  r1.onload = e => { sbpBuf = e.target.result; if (cfgBuf) parseAndRender(sbpBuf); };
+  r2.onload = e => { cfgBuf = e.target.result; if (sbpBuf) parseAndRender(sbpBuf); };
+
+  r1.readAsArrayBuffer(sbpFile);
+  r2.readAsArrayBuffer(cfgFile);
+}
+
+async function parseAndRender(sbpBuffer) {
+  const objects = parseBlueprint(sbpBuffer);
+  for (const obj of objects) {
+    const mesh = (await loadGLB(obj.typePath)).clone();
+    mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
+    mesh.quaternion.set(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
+    scene.add(mesh);
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
 }
-function loadBlueprint() {
-  const sbpFile = document.getElementById('sbp').files[0];
-  const cfgFile = document.getElementById('sbpcfg').files[0];
-  if (!sbpFile || !cfgFile) {
-    alert('Please upload both files.');
-    return;
-  }
-  const reader1 = new FileReader(), reader2 = new FileReader();
-  let sbpBuf = null, cfgBuf = null;
-  reader1.onload = (e) => { sbpBuf = e.target.result; if (cfgBuf) showMock(); };
-  reader2.onload = (e) => { cfgBuf = e.target.result; if (sbpBuf) showMock(); };
-  reader1.readAsArrayBuffer(sbpFile);
-  reader2.readAsArrayBuffer(cfgFile);
-}
-function showMock() {
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(100,100,100),
-    new THREE.MeshStandardMaterial({color:0x66ccff})
-  );
-  scene.add(box);
-}
+
 window.onload = () => {
   initScene();
   animate();
