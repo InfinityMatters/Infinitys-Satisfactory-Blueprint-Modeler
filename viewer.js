@@ -1,81 +1,41 @@
-import { parseBlueprint } from './parser.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Satisfactory Blueprint Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+  <script type="module" src="viewer.js"></script>
+  <style>
+    html, body { margin: 0; padding: 0; overflow: hidden; font-family: sans-serif; }
+    canvas { display: block; }
+    #ui {
+      position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95);
+      padding: 12px; border-radius: 8px; box-shadow: 0 0 5px #000; z-index: 1;
+    }
+    #log { max-height: 100px; overflow-y: auto; font-size: 12px; }
+    label { display: block; margin-top: 6px; margin-bottom: 2px; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <h3>Upload Blueprint</h3>
 
-let scene, camera, renderer, controls, loader;
-const modelCache = new Map();
+    <label for="sbp">📁 Upload .sbp Blueprint File:</label>
+    <input type="file" id="sbp" accept=".sbp"><br>
 
-function initScene() {
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+    <label for="sbpcfg">⚙️ Upload .sbpcfg Config File:</label>
+    <input type="file" id="sbpcfg" accept=".sbpcfg"><br><br>
 
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  camera.position.set(0, 300, 800);
-  controls.enableDamping = true;
-
-  const light = new THREE.HemisphereLight(0xffffff, 0x444444);
-  scene.add(light);
-
-  loader = new THREE.GLTFLoader();
-}
-
-function loadGLB(typePath) {
-  const key = typePath.split('/').pop();
-  if (modelCache.has(key)) return Promise.resolve(modelCache.get(key));
-
-  return loader.loadAsync(`models/${key}.glb`)
-    .then(gltf => {
-      modelCache.set(key, gltf.scene);
-      return gltf.scene;
-    })
-    .catch(() => {
-      console.warn(`⚠️ Missing model for ${key}`);
-      return new THREE.Mesh(
-        new THREE.BoxGeometry(100, 100, 100),
-        new THREE.MeshStandardMaterial({ color: 0xff8888 })
-      );
+    <button id="loadBtn">🚀 Load Blueprint</button>
+    <div id="log"></div>
+  </div>
+  <script type="module">
+    import { loadBlueprint } from './viewer.js';
+    document.getElementById('loadBtn').addEventListener('click', () => {
+      loadBlueprint();
     });
-}
-
-function loadBlueprint() {
-  const sbpFile = document.getElementById('sbp').files[0];
-  const cfgFile = document.getElementById('sbpcfg').files[0];
-  if (!sbpFile || !cfgFile) {
-    alert('Please upload both .sbp and .sbpcfg files.');
-    return;
-  }
-
-  const r1 = new FileReader(), r2 = new FileReader();
-  let sbpBuf = null, cfgBuf = null;
-
-  r1.onload = e => { sbpBuf = e.target.result; if (cfgBuf) parseAndRender(sbpBuf); };
-  r2.onload = e => { cfgBuf = e.target.result; if (sbpBuf) parseAndRender(sbpBuf); };
-
-  r1.readAsArrayBuffer(sbpFile);
-  r2.readAsArrayBuffer(cfgFile);
-}
-
-async function parseAndRender(sbpBuffer) {
-  const objects = parseBlueprint(sbpBuffer);
-  for (const obj of objects) {
-    const mesh = (await loadGLB(obj.typePath)).clone();
-    mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
-    mesh.quaternion.set(obj.rotation.x, obj.rotation.y, obj.rotation.z, obj.rotation.w);
-    scene.add(mesh);
-  }
-}
-
-function animate() {
-  requestAnimationFrame(animate);
-  controls.update();
-  renderer.render(scene, camera);
-}
-
-window.onload = () => {
-  initScene();
-  animate();
-};
-
-// 👇 Makes the function accessible to index.html button
-window.loadBlueprint = loadBlueprint;
+  </script>
+</body>
+</html>
