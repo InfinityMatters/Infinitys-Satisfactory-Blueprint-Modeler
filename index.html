@@ -11,8 +11,21 @@
       position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.95);
       padding: 12px; border-radius: 8px; box-shadow: 0 0 5px #000; z-index: 1;
     }
-    #log { max-height: 100px; overflow-y: auto; font-size: 12px; }
+    #log { max-height: 100px; overflow-y: auto; font-size: 12px; margin-top: 10px; }
     label { display: block; margin-top: 6px; margin-bottom: 2px; }
+    #spinner {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 10px;
+      z-index: 2;
+    }
   </style>
 </head>
 <body>
@@ -28,10 +41,30 @@
     <button id="loadBtn">🚀 Load Blueprint</button>
     <div id="log"></div>
   </div>
+
+  <div id="spinner">🔄 Loading Blueprint... <span id="progress"></span></div>
+
   <script type="module">
     import { loadBlueprint } from './viewer.js';
-    document.getElementById('loadBtn').addEventListener('click', () => {
-      loadBlueprint();
+    const spinner = document.getElementById('spinner');
+    const progress = document.getElementById('progress');
+    const log = document.getElementById('log');
+
+    window.setProgress = (loaded, total) => {
+      progress.textContent = ` (${loaded}/${total})`;
+    };
+
+    window.appendLog = (msg) => {
+      const entry = document.createElement('div');
+      entry.textContent = msg;
+      log.appendChild(entry);
+    };
+
+    document.getElementById('loadBtn').addEventListener('click', async () => {
+      log.innerHTML = '';
+      spinner.style.display = 'block';
+      await loadBlueprint();
+      spinner.style.display = 'none';
     });
   </script>
 </body>
