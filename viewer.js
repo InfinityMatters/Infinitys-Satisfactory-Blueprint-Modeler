@@ -76,3 +76,6 @@ window.onload = () => {
   initScene();
   animate();
 };
+
+// 👇 Makes the function accessible to index.html button
+window.loadBlueprint = loadBlueprint;
