@@ -15,16 +15,20 @@
       padding: 12px; border-radius: 8px; box-shadow: 0 0 5px #000; z-index: 1;
     }
     #log { max-height: 100px; overflow-y: auto; font-size: 12px; }
+    label { display: block; margin-top: 6px; margin-bottom: 2px; }
   </style>
 </head>
 <body>
   <div id="ui">
     <h3>Upload Blueprint</h3>
-    <label for="sbp">Add .sbp:</label>
-    <input type="file" id="sbp" accept=".sbp"> <br>
-    <label for="sbpcfg">Add .sbpcfg:</label>
-    <input type="file" id="sbpcfg" accept=".sbpcfg"> <br>
-    <button id="loadBtn">Load Blueprint</button>
+
+    <label for="sbp">📁 Upload .sbp Blueprint File:</label>
+    <input type="file" id="sbp" accept=".sbp"><br>
+
+    <label for="sbpcfg">⚙️ Upload .sbpcfg Config File:</label>
+    <input type="file" id="sbpcfg" accept=".sbpcfg"><br><br>
+
+    <button id="loadBtn">🚀 Load Blueprint</button>
     <div id="log"></div>
   </div>
   <script>
