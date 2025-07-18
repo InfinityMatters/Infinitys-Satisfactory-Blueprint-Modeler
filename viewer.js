@@ -3,7 +3,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/exampl
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
 import { parseBlueprint } from './parser.js';
 
-let scene, camera, renderer, controls, loader, blueprintGroup;
+let scene, camera, renderer, controls, loader, blueprintGroup, grid;
 const modelCache = new Map();
 const sidebar = document.getElementById('sidebar') || createSidebar();
 
@@ -29,7 +29,11 @@ function createSidebar() {
   // Hook up clear button
   setTimeout(() => {
     const btn = document.getElementById('clearBtn');
-    if (btn) btn.onclick = clearScene;
+    if (btn) btn.onclick = () => {
+      if (confirm('Are you sure you want to clear the scene?')) {
+        clearScene();
+      }
+    };
   }, 0);
 
   return div;
@@ -39,9 +43,12 @@ function updateSidebar(objects) {
   const list = document.getElementById('partList');
   if (!list) return;
   list.innerHTML = '';
+  const countByType = {};
   objects.forEach((obj, index) => {
+    const type = obj.typePath.split('/').pop();
+    countByType[type] = (countByType[type] || 0) + 1;
     const li = document.createElement('li');
-    li.textContent = `${index + 1}: ${obj.typePath.split('/').pop()}`;
+    li.textContent = `${index + 1}: ${type}`;
     li.style.cursor = 'pointer';
     li.onclick = () => {
       const target = blueprintGroup.children[index];
@@ -51,6 +58,14 @@ function updateSidebar(objects) {
     };
     list.appendChild(li);
   });
+
+  const summary = document.createElement('div');
+  summary.style.marginTop = '10px';
+  summary.innerHTML = '<strong>🧩 Part Count:</strong><br>' +
+    Object.entries(countByType)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join('<br>');
+  list.parentElement.insertBefore(summary, list);
 }
 
 function clearScene() {
@@ -67,6 +82,9 @@ function clearScene() {
   blueprintGroup = new THREE.Group();
   scene.add(blueprintGroup);
 
+  camera.position.set(0, 300, 800);
+  controls.target.set(0, 0, 0);
+
   const sidebar = document.getElementById('sidebar');
   if (sidebar) sidebar.innerHTML = `
     <button id="clearBtn">🗑 Clear Scene</button>
@@ -78,7 +96,11 @@ function clearScene() {
   if (log) log.innerHTML = '';
 
   const btn = document.getElementById('clearBtn');
-  if (btn) btn.onclick = clearScene;
+  if (btn) btn.onclick = () => {
+    if (confirm('Are you sure you want to clear the scene?')) {
+      clearScene();
+    }
+  };
 }
 
 function initScene() {
@@ -96,6 +118,9 @@ function initScene() {
   scene.add(light);
 
   loader = new GLTFLoader();
+
+  grid = new THREE.GridHelper(5000, 50);
+  scene.add(grid);
 }
 
 function loadGLB(typePath) {
