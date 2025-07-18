@@ -28,5 +28,3 @@ export function parseBlueprint(buffer) {
     typePath: obj.PathName,
     position: obj.Transform.Position,
     rotation: obj.Transform.Rotation
-  }));
-}
