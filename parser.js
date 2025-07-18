@@ -1,52 +1,32 @@
-// parser.js
+import { Parser } from 'https://cdn.jsdelivr.net/npm/@etothepii/satisfactory-file-parser@latest/dist/index.esm.js';
 
-/**
- * Lightweight parser for Satisfactory .sbp blueprint files
- * @param {ArrayBuffer} sbpBuffer - Binary .sbp data
- * @returns {Array} - Parsed array of blueprint objects
- */
-export function parseBlueprint(sbpBuffer) {
-  const view = new DataView(sbpBuffer);
-  let offset = 0;
-  const result = [];
+export function parseBlueprint(buffer) {
+  console.log('[parser.js] Using @etothepii/satisfactory-file-parser');
 
-  function readUint32() {
-    const val = view.getUint32(offset, true); offset += 4; return val;
-  }
+  const bp = Parser.ParseBlueprint('blueprint', buffer);
+  if (!bp || !Array.isArray(bp.BuildableList)) return [];
 
-  function readFloat32() {
-    const val = view.getFloat32(offset, true); offset += 4; return val;
-  }
+  // Attach metadata if available
+  if (bp.MetaData) {
+    const { Name, Description } = bp.MetaData;
+    window.appendLog?.(`📘 Name: ${Name || 'Unknown'}`);
+    window.appendLog?.(`📝 Description: ${Description || 'None'}`);
 
-  function readString() {
-    const len = readUint32();
-    const bytes = new Uint8Array(sbpBuffer, offset, len);
-    offset += len;
-    return new TextDecoder().decode(bytes);
-  }
-
-  try {
-    const version = readUint32();
-    const objectCount = readUint32();
-
-    for (let i = 0; i < objectCount; i++) {
-      const typePath = readString();
-      const position = {
-        x: readFloat32(),
-        y: readFloat32(),
-        z: readFloat32(),
-      };
-      const rotation = {
-        x: readFloat32(),
-        y: readFloat32(),
-        z: readFloat32(),
-        w: readFloat32(),
-      };
-      result.push({ typePath, position, rotation });
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+      const header = document.createElement('div');
+      header.style.marginBottom = '10px';
+      header.innerHTML = `
+        <strong>📘 ${Name || 'Unnamed Blueprint'}</strong><br>
+        <em>${Description || ''}</em>
+      `;
+      sidebar.prepend(header);
     }
-  } catch (e) {
-    console.error('Error parsing blueprint:', e);
   }
 
-  return result;
+  return bp.BuildableList.map(obj => ({
+    typePath: obj.PathName,
+    position: obj.Transform.Position,
+    rotation: obj.Transform.Rotation
+  }));
 }
