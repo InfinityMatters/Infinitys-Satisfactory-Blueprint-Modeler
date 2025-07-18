@@ -19,13 +19,25 @@ function createSidebar() {
   div.style.maxHeight = '90vh';
   div.style.overflowY = 'auto';
   div.style.boxShadow = '0 0 5px #000';
-  div.innerHTML = '<h4>Blueprint Parts</h4><ul id="partList" style="list-style:none;padding-left:0"></ul>';
+  div.innerHTML = `
+    <button id="clearBtn">🗑 Clear Scene</button>
+    <h4>Blueprint Parts</h4>
+    <ul id="partList" style="list-style:none;padding-left:0"></ul>
+  `;
   document.body.appendChild(div);
+
+  // Hook up clear button
+  setTimeout(() => {
+    const btn = document.getElementById('clearBtn');
+    if (btn) btn.onclick = clearScene;
+  }, 0);
+
   return div;
 }
 
 function updateSidebar(objects) {
   const list = document.getElementById('partList');
+  if (!list) return;
   list.innerHTML = '';
   objects.forEach((obj, index) => {
     const li = document.createElement('li');
@@ -39,6 +51,34 @@ function updateSidebar(objects) {
     };
     list.appendChild(li);
   });
+}
+
+function clearScene() {
+  if (blueprintGroup) {
+    scene.remove(blueprintGroup);
+    blueprintGroup.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+        else obj.material.dispose();
+      }
+    });
+  }
+  blueprintGroup = new THREE.Group();
+  scene.add(blueprintGroup);
+
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.innerHTML = `
+    <button id="clearBtn">🗑 Clear Scene</button>
+    <h4>Blueprint Parts</h4>
+    <ul id="partList" style="list-style:none;padding-left:0"></ul>
+  `;
+
+  const log = document.getElementById('log');
+  if (log) log.innerHTML = '';
+
+  const btn = document.getElementById('clearBtn');
+  if (btn) btn.onclick = clearScene;
 }
 
 function initScene() {
@@ -97,14 +137,12 @@ export function loadBlueprint() {
 }
 
 async function parseAndRender(sbpBuffer) {
+  clearScene();
+
   const objects = parseBlueprint(sbpBuffer);
   console.log(`[viewer.js] Parsed ${objects.length} objects`);
   window.setProgress?.(0, objects.length);
   let loaded = 0;
-
-  if (blueprintGroup) scene.remove(blueprintGroup);
-  blueprintGroup = new THREE.Group();
-  scene.add(blueprintGroup);
 
   for (const obj of objects) {
     const mesh = (await loadGLB(obj.typePath)).clone();
