@@ -1,107 +1,11 @@
+// ✅ Browser-ready imports from CDN
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
 import { parseBlueprint } from './parser.js';
 
-let scene, camera, renderer, controls, loader, blueprintGroup, grid;
+let scene, camera, renderer, controls, loader, blueprintGroup;
 const modelCache = new Map();
-const sidebar = document.getElementById('sidebar') || createSidebar();
-
-function createSidebar() {
-  const div = document.createElement('div');
-  div.id = 'sidebar';
-  div.style.position = 'absolute';
-  div.style.top = '10px';
-  div.style.right = '10px';
-  div.style.background = 'rgba(255,255,255,0.95)';
-  div.style.padding = '10px';
-  div.style.borderRadius = '8px';
-  div.style.maxHeight = '90vh';
-  div.style.overflowY = 'auto';
-  div.style.boxShadow = '0 0 5px #000';
-  div.innerHTML = `
-    <button id="clearBtn">🗑 Clear Scene</button>
-    <h4>Blueprint Parts</h4>
-    <ul id="partList" style="list-style:none;padding-left:0"></ul>
-  `;
-  document.body.appendChild(div);
-
-  // Hook up clear button
-  setTimeout(() => {
-    const btn = document.getElementById('clearBtn');
-    if (btn) btn.onclick = () => {
-      if (confirm('Are you sure you want to clear the scene?')) {
-        clearScene();
-      }
-    };
-  }, 0);
-
-  return div;
-}
-
-function updateSidebar(objects) {
-  const list = document.getElementById('partList');
-  if (!list) return;
-  list.innerHTML = '';
-  const countByType = {};
-  objects.forEach((obj, index) => {
-    const type = obj.typePath.split('/').pop();
-    countByType[type] = (countByType[type] || 0) + 1;
-    const li = document.createElement('li');
-    li.textContent = `${index + 1}: ${type}`;
-    li.style.cursor = 'pointer';
-    li.onclick = () => {
-      const target = blueprintGroup.children[index];
-      const box = new THREE.Box3().setFromObject(target);
-      const center = box.getCenter(new THREE.Vector3());
-      controls.target.copy(center);
-    };
-    list.appendChild(li);
-  });
-
-  const summary = document.createElement('div');
-  summary.style.marginTop = '10px';
-  summary.innerHTML = '<strong>🧩 Part Count:</strong><br>' +
-    Object.entries(countByType)
-      .map(([k, v]) => `${k}: ${v}`)
-      .join('<br>');
-  list.parentElement.insertBefore(summary, list);
-}
-
-function clearScene() {
-  if (blueprintGroup) {
-    scene.remove(blueprintGroup);
-    blueprintGroup.traverse(obj => {
-      if (obj.geometry) obj.geometry.dispose();
-      if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
-        else obj.material.dispose();
-      }
-    });
-  }
-  blueprintGroup = new THREE.Group();
-  scene.add(blueprintGroup);
-
-  camera.position.set(0, 300, 800);
-  controls.target.set(0, 0, 0);
-
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar) sidebar.innerHTML = `
-    <button id="clearBtn">🗑 Clear Scene</button>
-    <h4>Blueprint Parts</h4>
-    <ul id="partList" style="list-style:none;padding-left:0"></ul>
-  `;
-
-  const log = document.getElementById('log');
-  if (log) log.innerHTML = '';
-
-  const btn = document.getElementById('clearBtn');
-  if (btn) btn.onclick = () => {
-    if (confirm('Are you sure you want to clear the scene?')) {
-      clearScene();
-    }
-  };
-}
 
 function initScene() {
   scene = new THREE.Scene();
@@ -117,10 +21,49 @@ function initScene() {
   const light = new THREE.HemisphereLight(0xffffff, 0x444444);
   scene.add(light);
 
-  loader = new GLTFLoader();
-
-  grid = new THREE.GridHelper(5000, 50);
+  const grid = new THREE.GridHelper(5000, 50);
   scene.add(grid);
+
+  loader = new GLTFLoader();
+  blueprintGroup = new THREE.Group();
+  scene.add(blueprintGroup);
+}
+
+function clearScene() {
+  blueprintGroup.clear();
+  const log = document.getElementById('log');
+  if (log) log.innerHTML = '';
+}
+
+function updateSidebar(objects) {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  sidebar.innerHTML = `<button id="clearBtn">🗑 Clear Scene</button><h4>Blueprint Parts</h4><ul id="partList"></ul>`;
+
+  document.getElementById('clearBtn').onclick = () => {
+    if (confirm('Clear the scene?')) clearScene();
+  };
+
+  const list = document.getElementById('partList');
+  const countByType = {};
+  objects.forEach((obj, i) => {
+    const type = obj.typePath.split('/').pop();
+    countByType[type] = (countByType[type] || 0) + 1;
+
+    const li = document.createElement('li');
+    li.textContent = `${i + 1}: ${type}`;
+    li.style.cursor = 'pointer';
+    li.onclick = () => {
+      const target = blueprintGroup.children[i];
+      const box = new THREE.Box3().setFromObject(target);
+      controls.target.copy(box.getCenter(new THREE.Vector3()));
+    };
+    list.appendChild(li);
+  });
+
+  const summary = document.createElement('div');
+  summary.innerHTML = '<strong>🧩 Part Count:</strong><br>' + Object.entries(countByType).map(([k, v]) => `${k}: ${v}`).join('<br>');
+  sidebar.insertBefore(summary, list);
 }
 
 function loadGLB(typePath) {
@@ -142,8 +85,6 @@ function loadGLB(typePath) {
 }
 
 export function loadBlueprint() {
-  console.log('[viewer.js] loadBlueprint called');
-
   const sbpFile = document.getElementById('sbp').files[0];
   const cfgFile = document.getElementById('sbpcfg').files[0];
   if (!sbpFile || !cfgFile) {
@@ -163,12 +104,10 @@ export function loadBlueprint() {
 
 async function parseAndRender(sbpBuffer) {
   clearScene();
-
   const objects = parseBlueprint(sbpBuffer);
-  console.log(`[viewer.js] Parsed ${objects.length} objects`);
   window.setProgress?.(0, objects.length);
-  let loaded = 0;
 
+  let loaded = 0;
   for (const obj of objects) {
     const mesh = (await loadGLB(obj.typePath)).clone();
     mesh.position.set(obj.position.x, obj.position.y, obj.position.z);
